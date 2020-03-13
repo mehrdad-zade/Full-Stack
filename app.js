@@ -4,7 +4,10 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require('mongoose');
-const encrypt = require("mongoose-encryption");
+//const encrypt = require("mongoose-encryption");//md5 is more powerful
+//const md5 = require("md5");//hashing..bcrypt is stronger
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
 
 const homeStartingContent = "You can find a summary of my daily reads and thoughts here";
 const aboutContent = "I'm a computer scientist, husband, father and IT geek who follows the stock market and has a lot of curiosity about finding a relevant meditation with the goal of happiness and well-being";
@@ -38,7 +41,7 @@ const userSchema = new mongoose.Schema({
   email : String,
   password : String
 });
-userSchema.plugin(encrypt, { secret : process.env.KEY , encryptedFileds : ["password"]});
+//userSchema.plugin(encrypt, { secret : process.env.KEY , encryptedFileds : ["password"]});//md5 is mode powerful
 const User = mongoose.model("User", userSchema);
 
 app.get("/", function(req, res){
@@ -95,14 +98,20 @@ app.get("/login", function(req, res){
 });
 
 app.post("/login", function(req, res){
+  //const bodyPassword = md5(req.body.password)
   User.findOne({email : req.body.username }, function(err, foundUser){
-    if(foundUser && foundUser.password === req.body.password){
-      res.render("compose");
+    if(foundUser){
+      bcrypt.compare(req.body.password, foundUser.password, function(err, bcryptResult){
+        if(bcryptResult === true){
+          res.render("compose");
+        }
+      });
     }else{
       res.send("Username and Password does not match!");
     }
   })
 });
+
 
 //for now only admin is registered
 
@@ -111,17 +120,20 @@ app.get("/register", function(req, res){
 });
 
 app.post("/register", function(req, res){
-  const user = new User({
-    email : req.body.username,
-    password : req.body.password
-  });
-  user.save(function(err){
-      if (!err){
-          res.redirect("/");
-      }else{
-        console.log(err);
-      }
+  bcrypt.hash(req.body.password, saltRounds, function(err, hash){
+    const user = new User({
+      email : req.body.username,
+      password : hash
     });
+    user.save(function(err){
+        if (!err){
+            res.redirect("/");
+        }else{
+          console.log(err);
+        }
+      });
+  });
+
 });
 
 app.listen(process.env.PORT || 3000, function() {
