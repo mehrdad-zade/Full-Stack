@@ -23,7 +23,7 @@ app.use(session({secret : "our little secret", resave : false, saveUninitialized
 app.use(passport.initialize());
 app.use(passport.session());
 
-const uri = "mongodb+srv://" + process.env.ADMIN + ":" + process.env.PASSWORD + "@mongodbcluster-qiqmh.mongodb.net/blogDB";
+const uri = "mongodb+srv://" + process.env.ADMIN + ":" + process.env.PASSWORD + process.env.MONGO;
 //mongoose.connect(uri, {useNewUrlParser: true});
 mongoose.connect(uri, function(err, client) {
    if(err) {
